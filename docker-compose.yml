@@ -1,0 +1,84 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: summarizer-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - pipeline-net
+
+  gateway-service:
+    build:
+      context: ./gateway-service
+      dockerfile: Dockerfile
+    container_name: summarizer-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - UPLOAD_DIR=/shared/uploads
+    volumes:
+      - ./shared-storage:/shared
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - pipeline-net
+
+  ingestion-service:
+    build:
+      context: ./ingestion-service
+      dockerfile: Dockerfile
+    container_name: summarizer-ingestion
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_INPUT_QUEUE=doc_processing_queue
+      - REDIS_OUTPUT_QUEUE=summarization_queue
+      - CLEANED_DIR=/shared/cleaned
+    volumes:
+      - ./shared-storage:/shared
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - pipeline-net
+
+  summarization-service:
+    build:
+      context: ./summarization-service
+      dockerfile: Dockerfile
+    container_name: summarizer-ai
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_INPUT_QUEUE=summarization_queue
+      - MODEL_NAME=t5-small
+      - SUMMARIES_DIR=/shared/summaries
+      - HF_HOME=/app/cache/huggingface
+    volumes:
+      - ./shared-storage:/shared
+      - hf-model-cache:/app/cache/huggingface
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - pipeline-net
+
+volumes:
+  hf-model-cache:
+    driver: local
+
+networks:
+  pipeline-net:
+    driver: bridge

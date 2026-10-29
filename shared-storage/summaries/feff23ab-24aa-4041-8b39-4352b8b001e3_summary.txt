@@ -1,0 +1,1 @@
+artificial intelligence and machine learning technologies have rapidly transformed the industry. decoupling text ingestion, document parsing, and heavy model inference into independent units provides operational reliability and cost-effective cloud resource utilization.

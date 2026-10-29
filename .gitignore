@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+.venv/
+cache/
+shared-storage/uploads/*
+shared-storage/cleaned/*
+shared-storage/summaries/*
+!shared-storage/uploads/.gitkeep
+!shared-storage/cleaned/.gitkeep
+!shared-storage/summaries/.gitkeep

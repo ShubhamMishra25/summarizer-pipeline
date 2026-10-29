@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: summarization-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: summarization-service
+  template:
+    metadata:
+      labels:
+        app: summarization-service
+    spec:
+      containers:
+        - name: summarizer
+          image: summarizer-ai:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: pipeline-config
+          volumeMounts:
+            - name: shared-storage
+              mountPath: /shared
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "1500m"
+              memory: "2Gi"
+      volumes:
+        - name: shared-storage
+          persistentVolumeClaim:
+            claimName: shared-pipeline-pvc
